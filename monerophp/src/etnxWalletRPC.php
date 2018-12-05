@@ -31,7 +31,7 @@
 
 require_once('jsonRPCClient.php');
 
-class walletRPC
+class etnxWalletRPC
 {
   private $client;
 
@@ -129,7 +129,7 @@ class walletRPC
   public function _transform($amount = 0)
   {
     //
-    return $amount * 1000000000000;
+    return $amount * 100000000;
   }
 
   /**
@@ -460,21 +460,18 @@ class walletRPC
    * }
    *
    */
-  public function transfer($amount, $address = '', $payment_id = '', $mixin = 6, $account_index = 0, $subaddr_indices = '', $priority = 2, $unlock_time = 0, $do_not_relay = false)
+public function transfer($amount, $address = '', $payment_id = '', $mixin = 6, $account_index = 0, $subaddr_indices = '', $priority = 2, $unlock_time = 0, $do_not_relay = false)
   {
     if (is_array($amount)) { // Parameters passed in as object/dictionary
       $params = $amount;
-
       if (array_key_exists('destinations', $params)) {
         $destinations = $params['destinations'];
-
         if (!is_array($destinations)) {
           throw new Exception('Error: destinations must be an array');
         }
-
         foreach ($destinations as $destination) {
           if (array_key_exists('amount', $destinations[$destination])) {
-            $destinations[$destination]['amount'] = $destinations[$destination]['amount'];
+            $destinations[$destination]['amount'] = $this->_transform($destinations[$destination]['amount']);
           } else {
             throw new Exception('Error: Amount required');
           }
@@ -493,7 +490,7 @@ class walletRPC
         } else {
           throw new Exception('Error: Address required');
         }
-        $destinations = array(array('amount' => $amount), 'address' => $address);
+        $destinations = array(array('amount' => $this->_transform($amount), 'address' => $address));
       }
       if (array_key_exists('payment_id', $params)) {
         $payment_id = $params['payment_id'];
@@ -517,17 +514,13 @@ class walletRPC
         $do_not_relay = $params['do_not_relay'];
       }
     } else { // Legacy parameters used
-      $destinations = array(array('amount' => $amount), 'address' => $address);
+      $destinations = array(array('amount' => $this->_transform($amount), 'address' => $address));
     }
-
     $params = array('destinations' => $destinations, 'mixin' => $mixin, 'get_tx_key' => true, 'payment_id' => $payment_id, 'account_index' => $account_index, 'subaddr_indices' => $subaddr_indices, 'priority' => $priority, 'do_not_relay' => $do_not_relay);
     $transfer_method = $this->_run('transfer', $params);
-
     $save = $this->store(); // Save wallet state after transfer
-
     return $transfer_method;
   }
-
   /**
    *
    * Same as transfer, but splits transfer into more than one transaction if necessary
@@ -537,14 +530,11 @@ class walletRPC
   {
     if (is_array($amount)) { // Parameters passed in as object/dictionary
       $params = $amount;
-
       if (array_key_exists('destinations', $params)) {
         $destinations = $params['destinations'];
-
         if (!is_array($destinations)) {
           throw new Exception('Error: destinations must be an array');
         }
-
         foreach ($destinations as $destination) {
           if (array_key_exists('amount', $destinations[$destination])) {
             $destinations[$destination]['amount'] = $this->_transform($destinations[$destination]['amount']);
@@ -592,14 +582,107 @@ class walletRPC
     } else { // Legacy parameters used
       $destinations = array(array('amount' => $this->_transform($amount), 'address' => $address));
     }
-
     $params = array('destinations' => $destinations, 'mixin' => $mixin, 'get_tx_key' => true, 'account_index' => $account_index, 'subaddr_indices' => $subaddr_indices, 'payment_id' => $payment_id, 'priority' => $priority, 'unlock_time' => $unlock_time, 'do_not_relay' => $do_not_relay);
     $transfer_method = $this->_run('transfer_split', $params);
-
     $save = $this->store(); // Save wallet state after transfer
-
     return $transfer_method;
   }
+  /**
+   *
+   * Send all dust outputs back to the wallet
+   *
+   * @param  none
+   *
+   * @return object  Example: {
+   *   // TODO example
+   * }
+   *
+   */
+  public function sweep_dust()
+  {
+    return $this->_run('sweep_dust');
+  }
+  /**
+   *
+   * Send all unmixable outputs back to the wallet
+   *
+   * @param  none
+   *
+   * @return object  Example: {
+   *   // TODO example
+   * }
+   *
+   */
+  public function sweep_unmixable()
+  {
+    return $this->_run('sweep_unmixable');
+  }
+  /**
+   *
+   * Send all unlocked outputs from an account to an address
+   *
+   * @param  string   $address          Address to receive funds
+   * @param  string   $subaddr_indices  Comma-separated list of subaddress indices to sweep  (optional)
+   * @param  number   $account_index    Index of the account to sweep                        (optional)
+   * @param  string   $payment_id       Payment ID                                           (optional)
+   * @param  number   $mixin            Mixin number (ringsize - 1)                          (optional)
+   * @param  number   $priority         Payment ID                                           (optional)
+   * @param  number   $below_amount     Only send outputs below this amount                  (optional)
+   * @param  number   $unlock_time      UNIX time or block height to unlock output           (optional)
+   * @param  boolean  $do_not_relay     Do not relay transaction                             (optional)
+   *
+   *   OR
+   *
+   * @param  object  $params            Array containing any of the options listed above, where only address is required
+   *
+   * @return object  Example: {
+   *   "amount": "1000000000000",
+   *   "fee": "1000020000",
+   *   "tx_hash": "c60a64ddae46154a75af65544f73a7064911289a7760be8fb5390cb57c06f2db",
+   *   "tx_key": "805abdb3882d9440b6c80490c2d6b95a79dbc6d1b05e514131a91768e8040b04"
+   * }
+   *
+   */
+  public function sweep_all($address, $subaddr_indices = '', $account_index = 0, $payment_id = '', $mixin = 6, $priority = 2, $below_amount = 0, $unlock_time = 0, $do_not_relay = false)
+  {
+    if (is_array($address)) { // Parameters passed in as object/dictionary
+      $params = $address;
+      if (array_key_exists('address', $params)) {
+        $address = $params['address'];
+      } else {
+        throw new Exception('Error: Address required');
+      }
+      if (array_key_exists('subaddr_indices', $params)) {
+        $subaddr_indices = $params['subaddr_indices'];
+      }
+      if (array_key_exists('account_index', $params)) {
+        $account_index = $params['account_index'];
+      }
+      if (array_key_exists('payment_id', $params)) {
+        $payment_id = $params['payment_id'];
+      }
+      if (array_key_exists('mixin', $params)) {
+        $mixin = $params['mixin'];
+      }
+      if (array_key_exists('priority', $params)) {
+        $priority = $params['priority'];
+      }
+      if (array_key_exists('below_amount', $params)) {
+        $below_amount = $params['below_amount'];
+      }
+      if (array_key_exists('unlock_time', $params)) {
+        $unlock_time = $params['unlock_time'];
+      }
+      if (array_key_exists('do_not_relay', $params)) {
+        $do_not_relay = $params['do_not_relay'];
+      }
+    }
+    $params = array('address' => $address, 'mixin' => $mixin, 'get_tx_key' => true, 'subaddr_indices' => $subaddr_indices, 'account_index' => $account_index, 'payment_id' => $payment_id, 'priority' => $priority, 'below_amount' => $this->_transform($below_amount), 'unlock_time' => $unlock_time, 'do_not_relay' => $do_not_relay);
+    $sweep_all_method = $this->_run('sweep_all', $params);
+    $save = $this->store(); // Save wallet state after transfer
+    return $sweep_all_method;
+  }
+
 
   /**
    *
