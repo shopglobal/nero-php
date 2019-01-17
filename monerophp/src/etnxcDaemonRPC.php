@@ -32,7 +32,7 @@
 
 require_once('jsonRPCClient.php');
 
-class etnxpDaemonRPC
+class etnxcDaemonRPC
 {
   private $client;
 
