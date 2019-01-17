@@ -31,7 +31,7 @@
 
 require_once('jsonRPCClient.php');
 
-class etnxpWalletRPC
+class etnxcWalletRPC
 {
   private $client;
 
