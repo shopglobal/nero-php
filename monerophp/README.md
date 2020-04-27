@@ -5,7 +5,7 @@ A Electronero library written in PHP by the [Monero Integrations](https://monero
 This library has 3 main parts:
 
 1. A Electronero daemon JSON RPC API wrapper, `daemonRPC.php`
-2. A Electronero wallet (`monero-wallet-rpc`) JSON RPC API wrapper, `walletRPC.php`
+2. A Electronero wallet (`electronero-wallet-rpc`) JSON RPC API wrapper, `walletRPC.php`
 3. A Electronero/Cryptonote toolbox, `cryptonote.php`, with both lower level functions used in Electronero related cryptography and higher level methods for things like generating Monero private/public keys.
 
 In addition to these features, there are other lower-level libraries included for portability, *eg.* an ed25519 library, a SHA3 library, *etc.*
