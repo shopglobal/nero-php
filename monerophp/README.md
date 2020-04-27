@@ -19,7 +19,7 @@ Documentation can be found in the [`/docs`](https://github.com/sneurlax/moneroph
 
 ## Configuration
 ### Requirements
- - Electronero daemon (`monerod`)
+ - Electronero daemon (`electronerod`)
  - Webserver with PHP, for example XMPP, Apache, or NGINX
     - cURL PHP extension for JSON RPC API(s)
     - GMP PHP extension for about 100x faster calculations (as opposed to BCMath)
@@ -28,7 +28,7 @@ Debian (or Ubuntu) are recommended.
  
 ### Getting Started
 
-1. Start the Electronero daemon (`monerod`) on testnet.
+1. Start the Electronero daemon (`electronerod`) on testnet.
 ```bash
 electronerod --testnet --detach
 ```
