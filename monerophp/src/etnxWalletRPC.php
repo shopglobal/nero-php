@@ -129,6 +129,11 @@ class etnxWalletRPC
   public function _transform($amount = 0)
   {
     //
+    error_log("unformatted neroj:");
+    error_log($amount);
+    error_log("formatted neroj:");
+    $formattedAmount = $amount / 100000000;
+    error_log($formattedAmount);
     return $amount / 100000000;
   }
 
