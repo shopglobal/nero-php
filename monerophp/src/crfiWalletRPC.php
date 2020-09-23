@@ -31,7 +31,7 @@
 
 require_once('jsonRPCClient.php');
 
-class gldxWalletRPC
+class crfiWalletRPC
 {
   private $client;
 
