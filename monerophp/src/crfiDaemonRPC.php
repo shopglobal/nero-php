@@ -32,7 +32,7 @@
 
 require_once('jsonRPCClient.php');
 
-class gldxDaemonRPC
+class crfiDaemonRPC
 {
   private $client;
 
